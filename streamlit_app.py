@@ -50,6 +50,7 @@ smoothiefroot_response = requests.get("https://my.smoothiefroot.com/api/fruit/wa
 
 # exemple pour vérifier la réponse
 if smoothiefroot_response.status_code == 200:
-    st.write(smoothiefroot_response.json())
+    #st.write(smoothiefroot_response.json())
+    sf_sd = st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
 else:
     st.error(f"Erreur API: {smoothiefroot_response.status_code}")
