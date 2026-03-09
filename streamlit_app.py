@@ -1,41 +1,46 @@
 # Import python packages
 import streamlit as st
+from snowflake.snowpark.context import get_active_session
 from snowflake.snowpark.functions import col
 
-# connexion Snowflake
-cnx = st.connection("Snowflake")
-session = cnx.session()
+# session Snowflake (Streamlit dans Snowflake)
+session = get_active_session()
 
 # UI
-st.title(f":cup_with_straw: Customize Your Smoothie :cup_with_straw: {st.__version__}")
+st.title(":cup_with_straw: Customize Your Smoothie :cup_with_straw:")
 st.write("Choose the fruits you want in your custom Smoothie!")
 
-name_on_order = st.text_input('Name on Smoothie:')
-st.write('The name on your Smoothie will be ' + name_on_order)
+name_on_order = st.text_input("Name on Smoothie:")
+
+if name_on_order:
+    st.write("The name on your Smoothie will be " + name_on_order)
 
 # récupérer les fruits
-my_dataframe = session.table("smoothies.public.fruit_options").select(col("FRUIT_NAME"))
+df = session.table("smoothies.public.fruit_options").select(col("FRUIT_NAME"))
+
+# transformer en liste simple
+fruit_list = [row["FRUIT_NAME"] for row in df.collect()]
 
 ingredients_list = st.multiselect(
     "Choose up to 5 ingredients:",
-    my_dataframe.collect(),
+    fruit_list,
     max_selections=5
 )
 
 if ingredients_list:
 
-    ingredients_string = ""
-
-    for fruit_chosen in ingredients_list:
-        ingredients_string += fruit_chosen["FRUIT_NAME"] + " "
-
-    my_insert_stmt = f"""
-        INSERT INTO smoothies.public.orders (ingredients, name_on_order)
-        VALUES ('{ingredients_string}', '{name_on_order}')
-    """
+    ingredients_string = " ".join(ingredients_list)
 
     time_to_insert = st.button("Submit Order")
 
     if time_to_insert:
-        session.sql(my_insert_stmt).collect()
+
+        session.sql(
+            """
+            INSERT INTO smoothies.public.orders (ingredients, name_on_order)
+            VALUES (?, ?)
+            """,
+            params=[ingredients_string, name_on_order]
+        ).collect()
+
         st.success("Your Smoothie is ordered!", icon="✅")
