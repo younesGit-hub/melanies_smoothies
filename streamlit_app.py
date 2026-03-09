@@ -1,9 +1,10 @@
 # Import python packages
 import streamlit as st
+from snowflake.snowpark.context import get_active_session
 from snowflake.snowpark.functions import col
 
-cnx = st.connection("snowflake")
-session = cnx.session()
+# Récupérer la session active Snowflake
+session = get_active_session()
 
 # UI
 st.title(":cup_with_straw: Customize Your Smoothie :cup_with_straw:")
@@ -33,7 +34,7 @@ if ingredients_list:
     time_to_insert = st.button("Submit Order")
 
     if time_to_insert:
-
+        # insérer la commande dans Snowflake
         session.sql(
             """
             INSERT INTO smoothies.public.orders (ingredients, name_on_order)
