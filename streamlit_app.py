@@ -1,10 +1,9 @@
-# Import python packages
 import streamlit as st
-from snowflake.snowpark.context import get_active_session
 from snowflake.snowpark.functions import col
 
-# Récupérer la session active Snowflake
-session = get_active_session()
+# récupérer la connexion Snowflake depuis secrets
+cnx = st.connection("snowflake")
+session = cnx.session()
 
 # UI
 st.title(":cup_with_straw: Customize Your Smoothie :cup_with_straw:")
@@ -18,7 +17,6 @@ if name_on_order:
 # récupérer les fruits
 df = session.table("smoothies.public.fruit_options").select(col("FRUIT_NAME"))
 
-# transformer en liste simple
 fruit_list = [row["FRUIT_NAME"] for row in df.collect()]
 
 ingredients_list = st.multiselect(
@@ -28,13 +26,10 @@ ingredients_list = st.multiselect(
 )
 
 if ingredients_list:
-
     ingredients_string = " ".join(ingredients_list)
-
     time_to_insert = st.button("Submit Order")
 
     if time_to_insert:
-        # insérer la commande dans Snowflake
         session.sql(
             """
             INSERT INTO smoothies.public.orders (ingredients, name_on_order)
@@ -42,5 +37,4 @@ if ingredients_list:
             """,
             params=[ingredients_string, name_on_order]
         ).collect()
-
         st.success("Your Smoothie is ordered!", icon="✅")
